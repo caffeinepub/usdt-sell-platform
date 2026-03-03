@@ -86,7 +86,7 @@ function TimelineStep({
 }
 
 export function OrderDetailPage() {
-  const params = useParams({ from: "/orders/$id" });
+  const params = useParams({ from: "/public-layout/orders/$id" });
   const orderId = params.id ? BigInt(params.id) : null;
   const { data: order, isLoading } = useOrderById(orderId);
 

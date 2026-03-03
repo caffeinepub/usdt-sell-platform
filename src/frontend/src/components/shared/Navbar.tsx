@@ -13,7 +13,6 @@ import {
   ClipboardList,
   Home,
   Landmark,
-  LayoutDashboard,
   LogIn,
   LogOut,
   Menu,
@@ -21,7 +20,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useInternetIdentity } from "../../hooks/useInternetIdentity";
-import { useIsAdmin } from "../../hooks/useQueries";
 import { truncatePrincipal } from "../../utils/format";
 
 const navLinks = [
@@ -49,7 +47,6 @@ const navLinks = [
 export function Navbar() {
   const { identity, login, clear, isLoggingIn, isInitializing } =
     useInternetIdentity();
-  const { data: isAdmin } = useIsAdmin();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -102,20 +99,6 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-          {isAdmin && (
-            <Link
-              to="/admin"
-              data-ocid="nav.admin_link"
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive("/admin")
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Admin
-            </Link>
-          )}
         </nav>
 
         {/* Auth controls */}
@@ -201,21 +184,6 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
-            {isAdmin && (
-              <Link
-                to="/admin"
-                data-ocid="nav.admin_link"
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                  isActive("/admin")
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                }`}
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                Admin
-              </Link>
-            )}
             {!isAuthenticated && (
               <Button
                 onClick={() => {

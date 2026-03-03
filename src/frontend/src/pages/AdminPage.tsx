@@ -58,7 +58,6 @@ import {
 import { motion } from "motion/react";
 import { useState } from "react";
 import { Currency, OrderStatus, type SellOrder } from "../backend.d";
-import { AuthGuard } from "../components/shared/AuthGuard";
 import { StatusBadge } from "../components/shared/StatusBadge";
 import {
   useAdminAllOrders,
@@ -68,7 +67,6 @@ import {
   useAdminUpdateWalletAddress,
   useAdminWalletAddresses,
   useExchangeRates,
-  useIsAdmin,
   useSetExchangeRate,
 } from "../hooks/useQueries";
 import {
@@ -913,81 +911,70 @@ function WalletAddressesPanel() {
 }
 
 export function AdminPage() {
-  const { data: isAdmin, isLoading: isAdminLoading } = useIsAdmin();
-
   return (
-    <AuthGuard requireAdmin isAdmin={isAdmin}>
-      <main className="min-h-screen mesh-bg py-12 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <LayoutDashboard className="w-5 h-5 text-primary" />
-                </div>
-                <h1 className="font-display text-4xl font-bold">
-                  Admin Dashboard
-                </h1>
+    <main className="min-h-screen mesh-bg py-12 px-4">
+      <div className="container mx-auto max-w-6xl">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <LayoutDashboard className="w-5 h-5 text-primary" />
               </div>
-              <p className="text-muted-foreground">
-                Manage orders, exchange rates, and wallet addresses
-              </p>
+              <h1 className="font-display text-4xl font-bold">
+                Admin Dashboard
+              </h1>
             </div>
+            <p className="text-muted-foreground">
+              Manage orders, exchange rates, and wallet addresses
+            </p>
+          </div>
 
-            {isAdminLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-12 w-64 rounded-xl" />
-                <Skeleton className="h-64 w-full rounded-2xl" />
-              </div>
-            ) : (
-              <Tabs defaultValue="orders">
-                <TabsList className="mb-6 bg-muted/50">
-                  <TabsTrigger
-                    value="orders"
-                    className="gap-2"
-                    data-ocid="admin.orders_tab"
-                  >
-                    <ClipboardList className="w-4 h-4" />
-                    All Orders
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="rates"
-                    className="gap-2"
-                    data-ocid="admin.rates_tab"
-                  >
-                    <TrendingUp className="w-4 h-4" />
-                    Exchange Rates
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="wallets"
-                    className="gap-2"
-                    data-ocid="admin.wallet_tab"
-                  >
-                    <Wallet className="w-4 h-4" />
-                    Wallet Addresses
-                  </TabsTrigger>
-                </TabsList>
+          <Tabs defaultValue="orders">
+            <TabsList className="mb-6 bg-muted/50">
+              <TabsTrigger
+                value="orders"
+                className="gap-2"
+                data-ocid="admin.orders_tab"
+              >
+                <ClipboardList className="w-4 h-4" />
+                All Orders
+              </TabsTrigger>
+              <TabsTrigger
+                value="rates"
+                className="gap-2"
+                data-ocid="admin.rates_tab"
+              >
+                <TrendingUp className="w-4 h-4" />
+                Exchange Rates
+              </TabsTrigger>
+              <TabsTrigger
+                value="wallets"
+                className="gap-2"
+                data-ocid="admin.wallet_tab"
+              >
+                <Wallet className="w-4 h-4" />
+                Wallet Addresses
+              </TabsTrigger>
+            </TabsList>
 
-                <TabsContent value="orders">
-                  <AdminOrdersTable />
-                </TabsContent>
+            <TabsContent value="orders">
+              <AdminOrdersTable />
+            </TabsContent>
 
-                <TabsContent value="rates">
-                  <ExchangeRatesPanel />
-                </TabsContent>
+            <TabsContent value="rates">
+              <ExchangeRatesPanel />
+            </TabsContent>
 
-                <TabsContent value="wallets">
-                  <WalletAddressesPanel />
-                </TabsContent>
-              </Tabs>
-            )}
-          </motion.div>
-        </div>
-      </main>
-    </AuthGuard>
+            <TabsContent value="wallets">
+              <WalletAddressesPanel />
+            </TabsContent>
+          </Tabs>
+        </motion.div>
+      </div>
+    </main>
   );
 }
