@@ -19,7 +19,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +30,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Landmark, Loader2, Pencil, Plus, Star, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  Landmark,
+  Loader2,
+  Pencil,
+  Plus,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { type BankAccount, Currency } from "../backend.d";
@@ -66,11 +73,13 @@ function BankAccountForm({
   onSubmit,
   isPending,
   submitLabel,
+  error,
 }: {
   initial?: BankFormData;
   onSubmit: (data: BankFormData) => void;
   isPending: boolean;
   submitLabel: string;
+  error?: string;
 }) {
   const [form, setForm] = useState<BankFormData>(initial ?? defaultForm);
 
@@ -96,7 +105,7 @@ function BankAccountForm({
           onChange={handleChange("holderName")}
           placeholder="John Smith"
           required
-          data-ocid="bank_form.holder_input"
+          data-ocid="bank_form.input"
           className="bg-muted/50"
         />
       </div>
@@ -111,7 +120,7 @@ function BankAccountForm({
           onChange={handleChange("bankName")}
           placeholder="Chase Bank / HDFC Bank"
           required
-          data-ocid="bank_form.bank_name_input"
+          data-ocid="bank_form.input"
           className="bg-muted/50"
         />
       </div>
@@ -126,7 +135,7 @@ function BankAccountForm({
           onChange={handleChange("accountNumber")}
           placeholder="••••••••1234"
           required
-          data-ocid="bank_form.account_number_input"
+          data-ocid="bank_form.input"
           className="bg-muted/50 mono-num"
         />
       </div>
@@ -143,7 +152,7 @@ function BankAccountForm({
             form.currency === Currency.usd ? "021000021" : "HDFC0001234"
           }
           required
-          data-ocid="bank_form.routing_ifsc_input"
+          data-ocid="bank_form.input"
           className="bg-muted/50 mono-num"
         />
       </div>
@@ -156,10 +165,7 @@ function BankAccountForm({
             setForm((prev) => ({ ...prev, currency: v as Currency }))
           }
         >
-          <SelectTrigger
-            className="bg-muted/50"
-            data-ocid="bank_form.currency_select"
-          >
+          <SelectTrigger className="bg-muted/50" data-ocid="bank_form.select">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -176,12 +182,23 @@ function BankAccountForm({
           onCheckedChange={(checked) =>
             setForm((prev) => ({ ...prev, isDefault: !!checked }))
           }
-          data-ocid="bank_form.default_checkbox"
+          data-ocid="bank_form.checkbox"
         />
         <Label htmlFor="is-default" className="text-sm cursor-pointer">
           Set as default account
         </Label>
       </div>
+
+      {/* Inline error message */}
+      {error && (
+        <div
+          data-ocid="bank_form.error_state"
+          className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
+        >
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       <DialogFooter className="pt-2">
         <Button
@@ -214,13 +231,26 @@ function BankAccountCard({
   const updateAccount = useUpdateBankAccount();
   const deleteAccount = useDeleteBankAccount();
   const [editOpen, setEditOpen] = useState(false);
+  const [editError, setEditError] = useState<string | undefined>();
 
   const handleUpdate = async (data: BankFormData) => {
-    await updateAccount.mutateAsync({
-      id: account.id,
-      ...data,
-    });
-    setEditOpen(false);
+    setEditError(undefined);
+    try {
+      await updateAccount.mutateAsync({
+        id: account.id,
+        ...data,
+      });
+      setEditOpen(false);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to update bank account";
+      setEditError(msg);
+    }
+  };
+
+  const handleEditOpenChange = (open: boolean) => {
+    setEditOpen(open);
+    if (!open) setEditError(undefined);
   };
 
   const handleDelete = async () => {
@@ -268,17 +298,16 @@ function BankAccountCard({
 
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Edit Dialog */}
-          <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-8 h-8 text-muted-foreground hover:text-foreground"
-                data-ocid={`bank_accounts.edit_button.${index}`}
-              >
-                <Pencil className="w-4 h-4" />
-              </Button>
-            </DialogTrigger>
+          <Dialog open={editOpen} onOpenChange={handleEditOpenChange}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-8 h-8 text-muted-foreground hover:text-foreground"
+              data-ocid={`bank_accounts.edit_button.${index}`}
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle className="font-display text-xl">
@@ -289,6 +318,11 @@ function BankAccountCard({
                 </DialogDescription>
               </DialogHeader>
               <BankAccountForm
+                key={
+                  editOpen
+                    ? `edit-open-${account.id}`
+                    : `edit-closed-${account.id}`
+                }
                 initial={{
                   holderName: account.holderName,
                   bankName: account.bankName,
@@ -300,6 +334,7 @@ function BankAccountCard({
                 onSubmit={handleUpdate}
                 isPending={updateAccount.isPending}
                 submitLabel="Save Changes"
+                error={editError}
               />
             </DialogContent>
           </Dialog>
@@ -316,7 +351,7 @@ function BankAccountCard({
                 <Trash2 className="w-4 h-4" />
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent data-ocid={`bank_accounts.dialog.${index}`}>
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Bank Account?</AlertDialogTitle>
                 <AlertDialogDescription>
@@ -329,13 +364,15 @@ function BankAccountCard({
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel data-ocid="status_update.cancel_button">
+                <AlertDialogCancel
+                  data-ocid={`bank_accounts.cancel_button.${index}`}
+                >
                   Cancel
                 </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
                   className="bg-destructive hover:bg-destructive/90"
-                  data-ocid="status_update.confirm_button"
+                  data-ocid={`bank_accounts.confirm_button.${index}`}
                 >
                   {deleteAccount.isPending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -356,10 +393,23 @@ export function BankAccountsPage() {
   const { data: accounts, isLoading } = useBankAccounts();
   const addAccount = useAddBankAccount();
   const [addOpen, setAddOpen] = useState(false);
+  const [addError, setAddError] = useState<string | undefined>();
+
+  const handleAddOpenChange = (open: boolean) => {
+    setAddOpen(open);
+    if (!open) setAddError(undefined);
+  };
 
   const handleAdd = async (data: BankFormData) => {
-    await addAccount.mutateAsync(data);
-    setAddOpen(false);
+    setAddError(undefined);
+    try {
+      await addAccount.mutateAsync(data);
+      setAddOpen(false);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to add bank account";
+      setAddError(msg);
+    }
   };
 
   return (
@@ -381,37 +431,21 @@ export function BankAccountsPage() {
                 </p>
               </div>
 
-              {/* Add Account Dialog */}
-              <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    className="gap-2 glow-teal"
-                    data-ocid="bank_accounts.add_button"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Account
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle className="font-display text-xl">
-                      Add Bank Account
-                    </DialogTitle>
-                    <DialogDescription>
-                      Add a new bank account to receive USDT payouts.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <BankAccountForm
-                    onSubmit={handleAdd}
-                    isPending={addAccount.isPending}
-                    submitLabel="Add Account"
-                  />
-                </DialogContent>
-              </Dialog>
+              <Button
+                className="gap-2 glow-teal"
+                data-ocid="bank_accounts.open_modal_button"
+                onClick={() => setAddOpen(true)}
+              >
+                <Plus className="w-4 h-4" />
+                Add Account
+              </Button>
             </div>
 
             {isLoading ? (
-              <div className="space-y-4">
+              <div
+                className="space-y-4"
+                data-ocid="bank_accounts.loading_state"
+              >
                 {[1, 2].map((i) => (
                   <Skeleton key={i} className="h-28 w-full rounded-2xl" />
                 ))}
@@ -432,32 +466,14 @@ export function BankAccountsPage() {
                 <p className="text-muted-foreground mb-6 text-sm">
                   Add a bank account to start receiving USDT payouts.
                 </p>
-                <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      className="gap-2 glow-teal"
-                      data-ocid="bank_accounts.add_button"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Your First Account
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle className="font-display text-xl">
-                        Add Bank Account
-                      </DialogTitle>
-                      <DialogDescription>
-                        Add a new bank account to receive USDT payouts.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <BankAccountForm
-                      onSubmit={handleAdd}
-                      isPending={addAccount.isPending}
-                      submitLabel="Add Account"
-                    />
-                  </DialogContent>
-                </Dialog>
+                <Button
+                  className="gap-2 glow-teal"
+                  data-ocid="bank_accounts.primary_button"
+                  onClick={() => setAddOpen(true)}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Your First Account
+                </Button>
               </motion.div>
             ) : (
               <div className="space-y-4">
@@ -479,6 +495,27 @@ export function BankAccountsPage() {
           </motion.div>
         </div>
       </main>
+
+      {/* Single Add Account Dialog — shared by header button and empty-state button */}
+      <Dialog open={addOpen} onOpenChange={handleAddOpenChange}>
+        <DialogContent data-ocid="bank_accounts.dialog">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">
+              Add Bank Account
+            </DialogTitle>
+            <DialogDescription>
+              Add a new bank account to receive USDT payouts.
+            </DialogDescription>
+          </DialogHeader>
+          <BankAccountForm
+            key={addOpen ? "add-open" : "add-closed"}
+            onSubmit={handleAdd}
+            isPending={addAccount.isPending}
+            submitLabel="Add Account"
+            error={addError}
+          />
+        </DialogContent>
+      </Dialog>
     </AuthGuard>
   );
 }

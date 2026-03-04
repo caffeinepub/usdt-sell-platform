@@ -1,34 +1,19 @@
 # USDT Sell Platform
 
 ## Current State
-
-The platform has:
-- Admin dashboard with two tabs: "All Orders" and "Exchange Rates"
-- Backend supports managing sell orders and setting USDT/USD and USDT/INR exchange rates
-- Users can sell USDT and receive payment to saved bank accounts
-- No concept of a platform wallet address (where users send their USDT before payout is processed)
+The platform has a working bank account management system (add/edit/delete), sell orders, exchange rates, and admin panel. The backend uses an access control system where users must call `_initializeAccessControlWithSecret` to register before using any user-only endpoints. The `getUserRole` function in `access-control.mo` currently calls `Runtime.trap("User is not registered")` when a principal is not in the role map -- if this registration call fails or hasn't completed, all subsequent calls crash instead of returning a proper error.
 
 ## Requested Changes (Diff)
 
 ### Add
-- `WalletAddress` type in backend with fields: `id`, `label`, `address`, `network`, `isActive`
-- Backend functions: `adminSetWalletAddress`, `adminGetWalletAddresses`, `adminDeleteWalletAddress`, `getActiveWalletAddresses` (public, no auth)
-- New "Wallet Addresses" tab in the Admin Dashboard
-- Wallet address management UI: list of saved wallet addresses with network label, copy-to-clipboard, add new, edit, delete
-- `getActiveWalletAddresses` exposed publicly so users can see the current deposit address when placing a sell order
+- Nothing new to add
 
 ### Modify
-- `SellPage.tsx` — show the active wallet address(es) to the user after order creation, with copy button, so they know where to send USDT
-- `AdminPage.tsx` — add third tab "Wallet Addresses" with full CRUD panel
+- `access-control.mo`: Change `getUserRole` so that unregistered principals return `#guest` instead of trapping. This makes the system resilient -- if initialization is delayed or fails, calls return "Unauthorized" errors gracefully instead of crashing
 
 ### Remove
-- Nothing removed
+- Nothing to remove
 
 ## Implementation Plan
-
-1. Add `WalletAddress` type and store to `main.mo` with admin-only write functions and public read
-2. Regenerate `backend.d.ts` via `generate_motoko_code`
-3. Add `useWalletAddresses`, `useAdminWalletAddresses`, `useAdminSaveWalletAddress`, `useAdminDeleteWalletAddress` query hooks in frontend
-4. Build `WalletAddressesPanel` component in `AdminPage.tsx` with add/edit/delete dialog
-5. Update `SellPage.tsx` to show active wallet addresses after order is placed
-6. Validate, typecheck, build
+1. Regenerate backend Motoko code with the fixed `getUserRole` logic: unknown principals map to `#guest` role instead of calling `Runtime.trap`
+2. This ensures that if a user's `_initializeAccessControlWithSecret` hasn't completed yet, they get a clean "Unauthorized" error rather than a crash, and the frontend error toast shows correctly

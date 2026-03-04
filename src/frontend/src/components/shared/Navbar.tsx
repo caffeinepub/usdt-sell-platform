@@ -78,7 +78,7 @@ export function Navbar() {
             </span>
           </div>
           <span className="font-display font-bold text-xl text-foreground">
-            USDT<span className="text-primary">Sell</span>
+            DFI<span className="text-primary">NITY</span>
           </span>
         </Link>
 
