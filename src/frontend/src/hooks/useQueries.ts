@@ -63,7 +63,7 @@ export function useBankAccounts() {
 }
 
 export function useAddBankAccount() {
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (params: {
@@ -74,7 +74,12 @@ export function useAddBankAccount() {
       currency: Currency;
       isDefault: boolean;
     }) => {
-      if (!actor) throw new Error("Not connected");
+      if (isFetching)
+        throw new Error("Still connecting, please try again in a moment");
+      if (!actor)
+        throw new Error(
+          "Not connected to backend. Please refresh and try again.",
+        );
       return actor.addBankAccount(
         params.holderName,
         params.bankName,
@@ -95,7 +100,7 @@ export function useAddBankAccount() {
 }
 
 export function useUpdateBankAccount() {
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (params: {
@@ -107,7 +112,12 @@ export function useUpdateBankAccount() {
       currency: Currency;
       isDefault: boolean;
     }) => {
-      if (!actor) throw new Error("Not connected");
+      if (isFetching)
+        throw new Error("Still connecting, please try again in a moment");
+      if (!actor)
+        throw new Error(
+          "Not connected to backend. Please refresh and try again.",
+        );
       return actor.updateBankAccount(
         params.id,
         params.holderName,
@@ -129,11 +139,16 @@ export function useUpdateBankAccount() {
 }
 
 export function useDeleteBankAccount() {
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error("Not connected");
+      if (isFetching)
+        throw new Error("Still connecting, please try again in a moment");
+      if (!actor)
+        throw new Error(
+          "Not connected to backend. Please refresh and try again.",
+        );
       return actor.deleteBankAccount(id);
     },
     onSuccess: () => {
@@ -172,7 +187,7 @@ export function useOrderById(id: bigint | null) {
 }
 
 export function useCreateSellOrder() {
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (params: {
@@ -180,7 +195,12 @@ export function useCreateSellOrder() {
       payoutCurrency: Currency;
       bankAccountId: bigint;
     }) => {
-      if (!actor) throw new Error("Not connected");
+      if (isFetching)
+        throw new Error("Still connecting, please try again in a moment");
+      if (!actor)
+        throw new Error(
+          "Not connected to backend. Please refresh and try again.",
+        );
       return actor.createSellOrder(
         params.usdtAmount,
         params.payoutCurrency,
@@ -189,7 +209,8 @@ export function useCreateSellOrder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["callerOrders"] });
-      toast.success("Sell order created successfully!");
+      // Do NOT show success toast here — the user still needs to send USDT.
+      // The success toast is shown in SellPage after the user confirms sending.
     },
     onError: (err: Error) => {
       toast.error(err.message || "Failed to create sell order");
@@ -204,9 +225,26 @@ export function useAdminAllOrders() {
     queryKey: ["adminOrders"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.adminGetAllOrders();
+      try {
+        return await actor.adminGetAllOrders();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (
+          message.toLowerCase().includes("unauthorized") ||
+          message.toLowerCase().includes("not authorized") ||
+          message.toLowerCase().includes("access denied")
+        ) {
+          toast.error(
+            "Backend token required to view orders. Go to Admin Login → Advanced settings to add it.",
+            { id: "admin-orders-unauthorized", duration: 6000 },
+          );
+          return [];
+        }
+        throw err;
+      }
     },
     enabled: !!actor && !isFetching,
+    retry: false,
   });
 }
 

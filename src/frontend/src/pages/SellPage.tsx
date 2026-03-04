@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Currency } from "../backend.d";
 import { AuthGuard } from "../components/shared/AuthGuard";
 import {
@@ -217,6 +218,10 @@ export function SellPage() {
 
   const handleSendDialogDone = () => {
     setSendDialogOpen(false);
+    toast.success(
+      "Order placed! We'll process your payment after confirming receipt.",
+      { duration: 5000 },
+    );
     navigate({ to: "/orders" });
   };
 

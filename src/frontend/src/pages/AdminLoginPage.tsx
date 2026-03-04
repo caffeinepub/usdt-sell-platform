@@ -2,10 +2,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "@tanstack/react-router";
-import { Eye, EyeOff, Loader2, Lock, Shield, User } from "lucide-react";
-import { motion } from "motion/react";
+import {
+  ChevronDown,
+  Eye,
+  EyeOff,
+  HelpCircle,
+  KeyRound,
+  Loader2,
+  Lock,
+  Shield,
+  User,
+} from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { useAdminAuth } from "../hooks/useAdminAuth";
+import { storeSessionParameter } from "../utils/urlParams";
 
 export function AdminLoginPage() {
   const navigate = useNavigate();
@@ -14,6 +25,8 @@ export function AdminLoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [backendToken, setBackendToken] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,6 +53,10 @@ export function AdminLoginPage() {
     setIsSubmitting(false);
 
     if (success) {
+      // If a backend token was provided, store it so the actor picks it up
+      if (backendToken.trim()) {
+        storeSessionParameter("caffeineAdminToken", backendToken.trim());
+      }
       navigate({ to: "/admin" });
     } else {
       setError("Invalid username or password. Please try again.");
@@ -146,6 +163,80 @@ export function AdminLoginPage() {
                   )}
                 </button>
               </div>
+            </div>
+
+            {/* Advanced Settings Toggle */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((v) => !v)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
+                data-ocid="admin_login.toggle"
+                aria-expanded={showAdvanced}
+              >
+                <motion.span
+                  animate={{ rotate: showAdvanced ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex"
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </motion.span>
+                Advanced settings
+              </button>
+
+              <AnimatePresence initial={false}>
+                {showAdvanced && (
+                  <motion.div
+                    key="advanced"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pt-3 space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <Label
+                          htmlFor="backend-token"
+                          className="text-sm font-medium"
+                        >
+                          Backend Admin Token
+                        </Label>
+                        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
+                          optional
+                        </span>
+                        <button
+                          type="button"
+                          title="Required to view orders and manage data. Get this from your Caffeine platform settings."
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          tabIndex={-1}
+                          aria-label="Backend token info"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="backend-token"
+                          type="password"
+                          autoComplete="off"
+                          value={backendToken}
+                          onChange={(e) => setBackendToken(e.target.value)}
+                          placeholder="Paste token here"
+                          className="pl-10 bg-muted/50 font-mono text-xs"
+                          disabled={isSubmitting}
+                          data-ocid="admin_login.backend_token_input"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Required to view orders and manage data. Get this from
+                        your Caffeine platform settings.
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Error */}

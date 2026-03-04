@@ -43,6 +43,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { type BankAccount, Currency } from "../backend.d";
 import { AuthGuard } from "../components/shared/AuthGuard";
+import { useActor } from "../hooks/useActor";
 import {
   useAddBankAccount,
   useBankAccounts,
@@ -228,6 +229,7 @@ function BankAccountCard({
   account: BankAccount;
   index: number;
 }) {
+  const { isFetching: actorFetching } = useActor();
   const updateAccount = useUpdateBankAccount();
   const deleteAccount = useDeleteBankAccount();
   const [editOpen, setEditOpen] = useState(false);
@@ -332,8 +334,8 @@ function BankAccountCard({
                   isDefault: account.isDefault,
                 }}
                 onSubmit={handleUpdate}
-                isPending={updateAccount.isPending}
-                submitLabel="Save Changes"
+                isPending={updateAccount.isPending || actorFetching}
+                submitLabel={actorFetching ? "Connecting..." : "Save Changes"}
                 error={editError}
               />
             </DialogContent>
@@ -391,6 +393,7 @@ function BankAccountCard({
 
 export function BankAccountsPage() {
   const { data: accounts, isLoading } = useBankAccounts();
+  const { isFetching: actorFetching } = useActor();
   const addAccount = useAddBankAccount();
   const [addOpen, setAddOpen] = useState(false);
   const [addError, setAddError] = useState<string | undefined>();
@@ -510,8 +513,8 @@ export function BankAccountsPage() {
           <BankAccountForm
             key={addOpen ? "add-open" : "add-closed"}
             onSubmit={handleAdd}
-            isPending={addAccount.isPending}
-            submitLabel="Add Account"
+            isPending={addAccount.isPending || actorFetching}
+            submitLabel={actorFetching ? "Connecting..." : "Add Account"}
             error={addError}
           />
         </DialogContent>

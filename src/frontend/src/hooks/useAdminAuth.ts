@@ -59,6 +59,8 @@ export function useAdminAuth(): UseAdminAuthReturn {
   const logout = useCallback(() => {
     setSession(null);
     sessionStorage.removeItem(SESSION_KEY);
+    // Also clear the backend admin token so the actor loses admin privileges
+    sessionStorage.removeItem("caffeineAdminToken");
   }, []);
 
   return {
